@@ -1,0 +1,80 @@
+# Studio-owned DuckDB dbt project (VD-3794), shared by DuckDB-local and
+# MotherDuck — the two differ only in which profile they bind to, and that is
+# the `dbt_duckdb_local` token. Seeded skip_if_exists, so a domain that has
+# already customized its project keeps it untouched on every later spawn.
+#
+# `test` and `dbt_duckdb_local` are substituted at seed time by
+# the template engine, NOT by dbt. `name:` identifies the project and must equal
+# the project's OWN key under `models:` and `sources:`; an installed package adds
+# a sibling key there, as the `dbt_project_evaluator` gate below does. `profile:`
+# is a lookup key into the seeded transformation/profiles.yml and is deliberately
+# different.
+#
+# No `dispatch:` block: the Elementary Fabric Spark adapter overrides exist only
+# for dbt-fabricspark. On dbt-duckdb the stock Elementary macros apply.
+name: 'test'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_duckdb_local'
+
+model-paths: ['models']
+analysis-paths: ['analyses']
+test-paths: ['tests']
+seed-paths: ['seeds']
+macro-paths: ['macros']
+snapshot-paths: ['snapshots']
+
+clean-targets:
+  - 'target'
+  - 'dbt_packages'
+
+# dbt_project_evaluator stays installed — it backs the Verify-suite project audit
+# and the domain CI quality workflow — but its nodes are gated off by default
+# (VD-4701). They are the audit's own results, so building them writes the
+# package's whole result set into the Intent sandbox beside the domain's own
+# models, and every *enabled* node also reaches the generated docs site, where
+# the package's `fct_*`/`base_*` names are indistinguishable from the domain's marts.
+#
+# A consumer that needs the package enables it on the command line, and only there:
+#   dbt build --select package:dbt_project_evaluator --vars '{dbt_project_evaluator_enabled: true}'
+# Adding `dbt_project_evaluator_enabled` to this file's own `vars:` does NOT work:
+# dbt renders dbt_project.yml before a project-level var is available, so `var()`
+# here resolves `--vars` only and a declared entry is silently ignored.
+# The var indirection is load-bearing in both directions: `--vars` cannot override
+# a hardcoded `+enabled: false`, and a disabled node cannot be selected.
+#
+# `| as_bool` is required: `+enabled` takes a boolean, and jinja renders the var
+# as a string. Its macros are the one thing no config can gate, so the docs site
+# keeps a `dbt_project_evaluator` entry holding only `macros/` and the generic
+# test definition they declare.
+models:
+  'test':
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +materialized: table
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) | as_bool }}"
+
+# The package's one seed, gated with its models.
+seeds:
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) | as_bool }}"
+
+# Gated too, or the package's ~29 tests stay in the docs manifest as nodes that
+# can never run. `data_tests:` requires dbt >=1.8. That is a floor on the PROJECT,
+# not on the package: dbt schema-validates this file before it resolves packages,
+# so on 1.7 every command including `dbt deps` dies with "Additional properties
+# are not allowed". The seeded requirements pin the floor accordingly.
+data_tests:
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) | as_bool }}"
+
+# The project key must be present and match `name:`. It carries an explicit
+# `+enabled` rather than a bare null, which dbt does not accept as a config block.
+sources:
+  'test':
+    +enabled: true

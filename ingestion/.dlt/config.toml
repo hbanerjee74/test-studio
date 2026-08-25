@@ -1,0 +1,4 @@
+[sources.salesforce_prod]
+connector = "salesforce"
+source_name = "salesforce_source"
+user_name = "hello@abc.com"

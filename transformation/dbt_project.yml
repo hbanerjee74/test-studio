@@ -1,0 +1,54 @@
+# dbt project seeded by Vibe Data Studio. Yours to edit — it is never overwritten.
+#
+# `name:` must equal the project's own key under `models:` and `sources:`.
+# `profile:` is a lookup key into transformation/profiles.yml and is deliberately
+# a different name.
+name: 'test'
+version: '1.0.0'
+config-version: 2
+
+profile: 'dbt_duckdb_local'
+
+model-paths: ['models']
+analysis-paths: ['analyses']
+test-paths: ['tests']
+seed-paths: ['seeds']
+macro-paths: ['macros']
+snapshot-paths: ['snapshots']
+
+clean-targets:
+  - 'target'
+  - 'dbt_packages'
+
+# dbt_project_evaluator stays installed for the project audit, but its nodes are
+# off by default so its own results do not land beside your models or in the
+# generated docs site. Its models, seed and tests are gated together below.
+# Enable it per command:
+#
+#   dbt build --select package:dbt_project_evaluator --vars '{dbt_project_evaluator_enabled: true}'
+#
+# The var cannot be declared under `vars:` here — dbt renders dbt_project.yml
+# before project-level vars resolve, so `var()` sees `--vars` only.
+models:
+  'test':
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +materialized: table
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) | as_bool }}"
+
+seeds:
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) | as_bool }}"
+
+data_tests:
+  dbt_project_evaluator:
+    +enabled: "{{ var('dbt_project_evaluator_enabled', false) | as_bool }}"
+
+# dbt rejects a bare null here, so the key carries an explicit `+enabled`.
+sources:
+  'test':
+    +enabled: true

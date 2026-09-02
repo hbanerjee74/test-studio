@@ -1,0 +1,45 @@
+# dbt build artifacts
+target/
+dbt_packages/
+logs/
+*.log
+.user.yml
+edr_target/
+
+# Python
+*.pyc
+__pycache__/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Secrets and local config
+secrets.toml
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# VD Studio
+.claude/
+intent-state.json
+.agents_tmp/
+
+# Local data
+/data/
+
+# DuckDB database files — the dbt-duckdb target and any dlt duckdb destination.
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp/

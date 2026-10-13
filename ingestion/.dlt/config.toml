@@ -1,0 +1,4 @@
+[sources.salesforce]
+connector = "salesforce"
+connector_source = "dlt-verified"
+entry_point = "salesforce_source"
